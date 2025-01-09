@@ -2,7 +2,6 @@ const path = require('path');
 const minimist = require('minimist');
 const fs = require('fs');
 
-
 // grpc modules
 const grpc = require('@grpc/grpc-js');
 const protoLoader = require('@grpc/proto-loader')
@@ -45,8 +44,6 @@ function getServer() {
 
     return server
 }
-
-
 
 if (require.main === module) {
 
