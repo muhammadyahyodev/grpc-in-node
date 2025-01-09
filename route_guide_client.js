@@ -55,7 +55,6 @@ function runGetFeature(callback) {
     client.getFeature(point2, featureCallback);
 }
 
-
 function main() {
     async.series([
         runGetFeature,
