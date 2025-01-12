@@ -1,6 +1,7 @@
 const path = require('path');
 const minimist = require('minimist');
 const fs = require('fs');
+const _ = require('lodash');
 
 // grpc modules
 const grpc = require('@grpc/grpc-js');
@@ -35,11 +36,33 @@ function getFeature(call, callback) {
     callback(null, checkFeature(call.request));
 }
 
+function listFeatures(call) {
+    var lo = call.request.lo;
+    var hi = call.request.hi;
+    var left = _.min([lo.longitude, hi.longitude]);
+    var right = _.max([lo.longitude, hi.longitude]);
+    var top = _.max([lo.latitude, hi.latitude]);
+    var bottom = _.min([lo.latitude, hi.latitude]);
+
+    _.each(feature_list, function (feature) {
+        if (feature.name === '') {
+            return;
+        }
+        if (feature.location.longitude >= left &&
+            feature.location.longitude <= right &&
+            feature.location.latitude >= bottom &&
+            feature.location.latitude <= top) {
+            call.write(feature);
+        }
+    });
+    call.end();
+}
+
 function getServer() {
     const server = new grpc.Server()
 
     server.addService(protoDescriptor.RouteGuide.service, {
-        getFeature
+        getFeature, listFeatures
     })
 
     return server
