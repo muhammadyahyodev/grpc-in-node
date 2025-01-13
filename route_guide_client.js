@@ -77,10 +77,63 @@ function runListFeatures(callback) {
     call.on('end', callback);
 }
 
+function runRecordRoute(callback) {
+    var argv = parseArgs(process.argv, {
+        string: 'db_path'
+    });
+
+    fs.readFile(path.resolve(__dirname + "/db.json"), function (err, data) {
+        if (err) {
+            console.log(err);
+            callback(err);
+            return;
+        }
+
+        var feature_list = JSON.parse(data);
+
+        console.log("VARIABLE feature_list: ", feature_list)
+
+        var num_points = 10;
+        var call = client.recordRoute(function (error, stats) {
+            if (error) {
+                callback(error);
+                return;
+            }
+            console.log('Finished trip with', stats.point_count, 'points');
+            console.log('Passed', stats.feature_count, 'features');
+            console.log('Travelled', stats.distance, 'meters');
+            console.log('It took', stats.elapsed_time, 'seconds');
+            callback();
+        });
+
+        function pointSender(lat, lng) {
+            return function (callback) {
+                console.log('Visiting point ' + lat / COORD_FACTOR + ', ' +
+                    lng / COORD_FACTOR);
+                call.write({
+                    latitude: lat,
+                    longitude: lng
+                });
+                _.delay(callback, _.random(500, 1500));
+            };
+        }
+        var point_senders = [];
+        for (var i = 0; i < num_points; i++) {
+            var rand_point = feature_list[_.random(0, feature_list.length - 1)];
+            point_senders[i] = pointSender(rand_point.location.latitude,
+                rand_point.location.longitude);
+        }
+        async.series(point_senders, function () {
+            call.end();
+        });
+    });
+}
+
 function main() {
     async.series([
         // runGetFeature, 
-        runListFeatures
+        // runListFeatures,
+        runRecordRoute
     ]);
 }
 
